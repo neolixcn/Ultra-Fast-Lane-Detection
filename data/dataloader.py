@@ -19,6 +19,7 @@ def get_train_loader(batch_size, data_root, griding_num, dataset, use_aux, distr
     img_transform = transforms.Compose([
         transforms.Resize((288, 800)),
         transforms.ToTensor(),
+        # transforms.ColorJitter(),
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
     simu_transform = mytransforms.Compose2([
@@ -43,10 +44,10 @@ def get_train_loader(batch_size, data_root, griding_num, dataset, use_aux, distr
         train_dataset = BddLaneClsDataset(data_root,
                                            os.path.join(data_root, 'train.txt'), #'new_train.txt ' #'train.txt' 2000
                                            img_transform=img_transform, target_transform=target_transform,
-                                           simu_transform = simu_transform_bdd,
+                                           simu_transform = simu_transform,
                                            griding_num=griding_num, 
                                            row_anchor = tusimple_row_anchor,
-                                           segment_transform=segment_transform, use_aux=use_aux, num_lanes = num_lanes)
+                                           segment_transform=segment_transform, use_aux=use_aux, num_lanes = num_lanes, mode = "train")
         cls_num_per_lane = 56
 
     elif dataset == 'Tusimple':
@@ -104,8 +105,17 @@ def get_val_loader(batch_size, data_root, griding_num, dataset, use_aux, distrib
                                            simu_transform = None,
                                            griding_num=griding_num,
                                            row_anchor = tusimple_row_anchor,
-                                           segment_transform=segment_transform,use_aux=use_aux, num_lanes = num_lanes)
-
+                                           segment_transform=segment_transform,use_aux=use_aux, num_lanes = num_lanes, mode = "val")
+    
+    elif dataset == 'neolix':
+        val_dataset = LaneClsDataset(data_root,
+                                        os.path.join(data_root, 'val_gt.txt'),
+                                        img_transform=img_transform, target_transform=target_transform,
+                                        simu_transform = None,
+                                        segment_transform=segment_transform,
+                                        row_anchor = tusimple_row_anchor,
+                                        griding_num=griding_num, use_aux=use_aux, num_lanes = num_lanes)
+    
     elif dataset == 'Tusimple':
         val_dataset = LaneClsDataset(data_root,
                                            os.path.join(data_root, 'train_gt.txt'),
