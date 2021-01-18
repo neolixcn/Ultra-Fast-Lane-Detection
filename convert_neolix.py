@@ -77,7 +77,8 @@ def generate_segmentation_and_train_list(root, line_txt, names):
         k_neg.sort()
         k_pos.sort()
 
-        label_path = "labels/" + names[i][:-3]+'png'
+        # name = "images/"
+        label_path = "labels/" + names[i][7:-3]+'png'
         label = np.zeros((1080,1990),dtype=np.uint8)
         # label = np.zeros((720,1280),dtype=np.uint8)
         bin_label = [0,0,0,0]
