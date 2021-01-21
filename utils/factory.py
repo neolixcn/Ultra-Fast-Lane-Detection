@@ -31,14 +31,14 @@ def get_loss_dict(cfg):
         loss_dict = {
             'name': ['cls_loss', 'relation_loss', 'aux_loss', 'relation_dis'],
             'op': [SoftmaxFocalLoss(2), ParsingRelationLoss(), torch.nn.CrossEntropyLoss(), ParsingRelationDis()],
-            'weight': [1.0, cfg.sim_loss_w, 1.0, cfg.shp_loss_w],
+            'weight': [cfg.cls_loss_w, cfg.sim_loss_w, cfg.seg_loss_w, cfg.shp_loss_w],
             'data_src': [('cls_out', 'cls_label'), ('cls_out',), ('seg_out', 'seg_label'), ('cls_out',)]
         }
     else:
         loss_dict = {
             'name': ['cls_loss', 'relation_loss', 'relation_dis'],
             'op': [SoftmaxFocalLoss(2), ParsingRelationLoss(), ParsingRelationDis()],
-            'weight': [1.0, cfg.sim_loss_w, cfg.shp_loss_w],
+            'weight': [cfg.cls_loss_w, cfg.sim_loss_w, cfg.shp_loss_w],
             'data_src': [('cls_out', 'cls_label'), ('cls_out',), ('cls_out',)]
         }
 
@@ -49,12 +49,14 @@ def get_metric_dict(cfg):
     if cfg.use_aux:
         metric_dict = {
             'name': ['top1', 'top2', 'top3', 'iou'],
+            'best_metric':{'top1':0, 'top2':0, 'top3':0, 'iou':0},
             'op': [MultiLabelAcc(), AccTopk(cfg.griding_num, 2), AccTopk(cfg.griding_num, 3), Metric_mIoU(cfg.num_lanes+1)],
             'data_src': [('cls_out', 'cls_label'), ('cls_out', 'cls_label'), ('cls_out', 'cls_label'), ('seg_out', 'seg_label')]
         }
     else:
         metric_dict = {
             'name': ['top1', 'top2', 'top3'],
+            'best_metric':{'top1':0, 'top2':0, 'top3':0},
             'op': [MultiLabelAcc(), AccTopk(cfg.griding_num, 2), AccTopk(cfg.griding_num, 3)],
             'data_src': [('cls_out', 'cls_label'), ('cls_out', 'cls_label'), ('cls_out', 'cls_label')]
         }

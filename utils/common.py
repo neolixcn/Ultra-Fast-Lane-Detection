@@ -49,7 +49,7 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('config', help = 'path to config file')
     parser.add_argument('--local_rank', type=int, default=0)
-
+    parser.add_argument('--val', default = False, type = str2bool)
     parser.add_argument('--dataset', default = None, type = str)
     parser.add_argument('--data_root', default = None, type = str)
     parser.add_argument('--epoch', default = None, type = int)
@@ -90,13 +90,13 @@ def merge_config():
         if getattr(args, item) is not None:
             dist_print('merge ', item, ' config')
             setattr(cfg, item, getattr(args, item))
-    
-    if "val_batch_size" not in cfg:
-        cfg.val_batch_size = cfg.batch_size
-    if "val_data_root" not in cfg:
-        cfg.val_data_root = cfg.data_root
-    if "val_dataset" not in cfg:
-        cfg.val_dataset = cfg.dataset
+    if cfg.val == "True":
+        if "val_batch_size" not in cfg:
+            cfg.val_batch_size = cfg.batch_size
+        if "val_data_root" not in cfg:
+            cfg.val_data_root = cfg.data_root
+        if "val_dataset" not in cfg:
+            cfg.val_dataset = cfg.dataset
     
     return args, cfg
 
