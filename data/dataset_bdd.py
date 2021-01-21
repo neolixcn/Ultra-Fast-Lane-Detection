@@ -37,7 +37,7 @@ class BddLaneTestDataset(torch.utils.data.Dataset):
 
 class BddLaneClsDataset(torch.utils.data.Dataset):
     def __init__(self, path, list_path, img_transform = None,target_transform = None,simu_transform = None, griding_num=50, load_name = False,
-                row_anchor = None,use_aux=False,only_road=False,segment_transform=None, num_lanes = 4):
+                row_anchor = None,use_aux=False,only_road=False,segment_transform=None, num_lanes = 4, mode = "train"):
         super(BddLaneClsDataset, self).__init__()
         self.img_transform = img_transform
         self.target_transform = target_transform
@@ -48,6 +48,7 @@ class BddLaneClsDataset(torch.utils.data.Dataset):
         self.load_name = load_name
         self.use_aux = use_aux
         self.num_lanes = num_lanes
+        self.mode = mode
 
         with open(list_path, 'r') as f:
             self.list = f.readlines()
@@ -64,10 +65,16 @@ class BddLaneClsDataset(torch.utils.data.Dataset):
             img_name = img_name[1:]
             label_name = label_name[1:]
 
-        label_path = os.path.join(self.path, "generated_labels/100k/train/" + label_name + ".png")
-        label = loader_func(label_path)
+        if self.mode == "train":
+            label_path = os.path.join(self.path, "generated_labels/100k/" + self.mode + "/" + label_name + ".png")
+            img_path = os.path.join(self.path, "images/100k/" + self.mode + "/" + img_name + ".jpg" )
+        elif self.mode == "val":
+            label_path = os.path.join(self.path, "generated_labels/100k/" + self.mode  + "/" + label_name + ".png")
+            img_path = os.path.join(self.path, "images/100k/" + self.mode + "/" + img_name + ".jpg" )
+        else:
+            print("wrong mode!")
 
-        img_path = os.path.join(self.path, "images/100k/train/" + img_name + ".jpg" )
+        label = loader_func(label_path)
         img = loader_func(img_path)
     
         if self.simu_transform is not None:
