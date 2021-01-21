@@ -79,14 +79,15 @@ def train(net, data_loader, loss_dict, optimizer, scheduler,logger, epoch, metri
         results = resolve_val_data(results, cfg.use_aux)
         update_metrics(metric_dict, results)
         if global_step % 20 == 0:
+            # import pdb; pdb.set_trace()
             logger.add_image("train_image", data_label[0][0], global_step=global_step)
             if cfg.use_aux:
                 seg_color_out = decode_seg_color_map(results["seg_out"][0])
-                seg_color_label = decode_seg_color_map( results["seg_label"][0])
+                seg_color_label = decode_seg_color_map(data_label[2][0])
                 logger.add_image("train_seg/predict", seg_color_out, global_step=global_step, dataformats='HWC')
                 logger.add_image("train_seg/label",seg_color_label, global_step=global_step, dataformats='HWC')
             cls_color_out = decode_cls_color_map(data_label[0][0], results["cls_out"][0], cfg)
-            cls_color_label = decode_cls_color_map(data_label[0][0], results["cls_label"][0], cfg)
+            cls_color_label = decode_cls_color_map(data_label[0][0], data_label[1][0], cfg)
             logger.add_image("train_cls/predict", cls_color_out, global_step=global_step, dataformats='HWC')
             logger.add_image("train_cls/label", cls_color_label, global_step=global_step, dataformats='HWC')
 
@@ -132,13 +133,14 @@ def val(net, data_loader, loss_dict, scheduler,logger, epoch, metric_dict, cfg):
             if global_step % 20 == 0:
                 logger.add_image("val_image", data_label[0][0], global_step=global_step)
                 if cfg.use_aux:
+                    # pdb.set_trace()
                     seg_color_out = decode_seg_color_map(results["seg_out"][0])
-                    seg_color_label = decode_seg_color_map( results["seg_label"][0])
+                    seg_color_label = decode_seg_color_map(data_label[2][0])
                     logger.add_image("val_seg/predict", seg_color_out, global_step=global_step, dataformats='HWC')
                     logger.add_image("val_seg/label",seg_color_label, global_step=global_step, dataformats='HWC')
 
                 cls_color_out = decode_cls_color_map(data_label[0][0], results["cls_out"][0], cfg)
-                cls_color_label = decode_cls_color_map(data_label[0][0], results["cls_label"][0], cfg)
+                cls_color_label = decode_cls_color_map(data_label[0][0], data_label[1][0], cfg)
                 logger.add_image("val_cls/predict", cls_color_out, global_step=global_step, dataformats='HWC')
                 logger.add_image("val_cls/label", cls_color_label, global_step=global_step, dataformats='HWC')
 
@@ -159,6 +161,8 @@ def val(net, data_loader, loss_dict, scheduler,logger, epoch, metric_dict, cfg):
     # Pyten-20201019-SaveBestMetric
     update_best_metric = True
     for me_name, me_op in zip(metric_dict['name'], metric_dict['op']):
+        if me_name == "iou":
+            continue
         cur_metric = me_op.get()
         if cur_metric < metric_dict["best_metric"][me_name]:
             update_best_metric = False
@@ -176,7 +180,7 @@ if __name__ == "__main__":
 
     work_dir = get_work_dir(cfg)
 
-    distributed = False
+    distributed = cfg.distributed if "distributed" in cfg else False
     if 'WORLD_SIZE' in os.environ:
         distributed = int(os.environ['WORLD_SIZE']) > 1
 
@@ -189,12 +193,13 @@ if __name__ == "__main__":
 
 
     train_loader, cls_num_per_lane = get_train_loader(cfg.batch_size, cfg.data_root, cfg.griding_num, cfg.dataset, cfg.use_aux, distributed, cfg.num_lanes, cfg)
-    val_loader = get_val_loader(cfg.val_batch_size, cfg.val_data_root, cfg.griding_num, cfg.val_dataset, cfg.use_aux, distributed, cfg.num_lanes)
+    if cfg.val:
+        val_loader = get_val_loader(cfg.val_batch_size, cfg.val_data_root, cfg.griding_num, cfg.val_dataset, cfg.use_aux, distributed, cfg.num_lanes)
 
     net = parsingNet(pretrained = True, backbone=cfg.backbone,cls_dim = (cfg.griding_num+1,cls_num_per_lane, cfg.num_lanes),use_aux=cfg.use_aux).cuda()
 
     if distributed:
-        net = torch.nn.parallel.DistributedDataParallel(net, device_ids = [args.local_rank])
+        net = torch.nn.parallel.DistributedDataParallel(net, device_ids = [args.local_rank], output_device=args.local_rank, find_unused_parameters=True)
     optimizer = get_optimizer(net, cfg)
     val_first = False
     if cfg.finetune is not None:
