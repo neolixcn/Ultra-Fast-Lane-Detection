@@ -26,7 +26,7 @@ class Metric_mIoU():
     def get_miou(self):
         miou = np.diag(self.hist) / (
                     np.sum(self.hist, axis=1) + np.sum(self.hist, axis=0) -
-                    np.diag(self.hist))
+                    np.diag(self.hist) + 0.001)
         miou = np.nanmean(miou)
         return miou
 

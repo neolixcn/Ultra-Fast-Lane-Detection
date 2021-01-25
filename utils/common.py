@@ -3,6 +3,38 @@ from utils.dist_utils import is_main_process, dist_print, DistSummaryWriter
 from utils.config import Config
 import torch
 
+trainId2color = {0:(255,0,0), 1:(0, 255, 0), 2:(0, 0, 255), 3:(255,255,0)}
+
+def decode_seg_color_map(label):
+    color_map = torch.ones((label.shape[0], label.shape[1], 3))* 255
+    for id in trainId2color:
+        color_map[label == id] = torch.tensor(trainId2color[id]).float()
+
+    return color_map
+
+def decode_cls_color_map(img, label, cfg): 
+    """
+    img: transformed img, tensor
+    label: prediction or label
+    cfg: anchors, griding_num
+    """
+
+    c, h, w  = img.shape
+    grid_width = w / cfg.griding_num
+    anchor_height = cfg.anchors[1] - cfg.anchors[0]
+    if h != 288:
+            scale_f = lambda x : int((x * 1.0/288) * h)
+            anchor_list = list(map(scale_f, anchors))
+    else:
+        anchor_list = cfg.anchors
+
+    color_map = torch.ones((img.shape[1], img.shape[2] + int(grid_width+1), img.shape[0]))* 255
+    for anchor in range(label.shape[0]):
+        for lane in range(label.shape[1]):
+            grid_index = label[anchor, lane]
+            color_map[anchor_list[anchor] - anchor_height:anchor_list[anchor], int(grid_width*(grid_index)):int(grid_width*(grid_index + 1)), :] =  torch.tensor(trainId2color[lane]).float()
+    return color_map
+
 def str2bool(v):
     if isinstance(v, bool):
        return v
@@ -17,7 +49,7 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('config', help = 'path to config file')
     parser.add_argument('--local_rank', type=int, default=0)
-
+    parser.add_argument('--val', default = False, type = str2bool)
     parser.add_argument('--dataset', default = None, type = str)
     parser.add_argument('--data_root', default = None, type = str)
     parser.add_argument('--epoch', default = None, type = int)
@@ -41,6 +73,7 @@ def get_args():
     parser.add_argument('--finetune', default = None, type = str)
     parser.add_argument('--resume', default = None, type = str)
     parser.add_argument('--test_model', default = None, type = str)
+    parser.add_argument('--save_prefix', default = None, type = str)
     parser.add_argument('--test_work_dir', default = None, type = str)
     parser.add_argument('--num_lanes', default = None, type = int)
     return parser
@@ -52,11 +85,19 @@ def merge_config():
     items = ['dataset','data_root','epoch','batch_size','optimizer','learning_rate',
     'weight_decay','momentum','scheduler','steps','gamma','warmup','warmup_iters',
     'use_aux','griding_num','backbone','sim_loss_w','shp_loss_w','note','log_path',
-    'finetune','resume', 'test_model','test_work_dir', 'num_lanes']
+    'finetune','resume', 'test_model','test_work_dir', 'num_lanes',  "save_prefix"]
     for item in items:
         if getattr(args, item) is not None:
             dist_print('merge ', item, ' config')
             setattr(cfg, item, getattr(args, item))
+    if cfg.val == "True":
+        if "val_batch_size" not in cfg:
+            cfg.val_batch_size = cfg.batch_size
+        if "val_data_root" not in cfg:
+            cfg.val_data_root = cfg.data_root
+        if "val_dataset" not in cfg:
+            cfg.val_dataset = cfg.dataset
+    
     return args, cfg
 
 
