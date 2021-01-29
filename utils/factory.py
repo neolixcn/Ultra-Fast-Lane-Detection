@@ -1,4 +1,4 @@
-from utils.loss import SoftmaxFocalLoss, ParsingRelationLoss, ParsingRelationDis
+from utils.loss import SoftmaxFocalLoss, ParsingRelationLoss, ParsingRelationDis, SmoonthCrossEntropyLoss
 from utils.metrics import MultiLabelAcc, AccTopk, Metric_mIoU
 from utils.dist_utils import DistSummaryWriter
 
@@ -30,7 +30,8 @@ def get_loss_dict(cfg):
     if cfg.use_aux:
         loss_dict = {
             'name': ['cls_loss', 'relation_loss', 'aux_loss', 'relation_dis'],
-            'op': [SoftmaxFocalLoss(2), ParsingRelationLoss(), torch.nn.CrossEntropyLoss(), ParsingRelationDis()],
+            # 'op': [SoftmaxFocalLoss(2), ParsingRelationLoss(), torch.nn.CrossEntropyLoss(), ParsingRelationDis()],
+            'op': [SmoonthCrossEntropyLoss(), ParsingRelationLoss(), torch.nn.CrossEntropyLoss(), ParsingRelationDis()],
             'weight': [cfg.cls_loss_w, cfg.sim_loss_w, cfg.seg_loss_w, cfg.shp_loss_w],
             'data_src': [('cls_out', 'cls_label'), ('cls_out',), ('seg_out', 'seg_label'), ('cls_out',)]
         }

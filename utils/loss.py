@@ -37,6 +37,32 @@ class SoftmaxFocalLoss(nn.Module):
         loss = self.nll(log_score, labels)
         return loss
 
+class SmoonthCrossEntropyLoss(nn.Module):
+    def __init__(self, ignore_lb=255, smoothing=0.05, weight=None, *args, **kwargs):
+        super(SmoonthCrossEntropyLoss, self).__init__()
+        self.nll = nn.NLLLoss(ignore_index=ignore_lb)
+        self.smoothing = smoothing
+        self.weight = weight
+
+    def forward(self, logits, target):
+        logprobs = torch.nn.functional.log_softmax(logits, dim=1)
+        nll_loss = -logprobs.gather(dim=1, index=target.long().unsqueeze(1))
+        nll_loss = nll_loss.squeeze(1)
+        smooth_loss = -logprobs.mean(dim=1)
+        loss = (1.0 - self.smoothing) * nll_loss + self.smoothing * smooth_loss
+        #loss= nll_loss + self.smoothing*torch.mul(smooth_loss-nll_loss, torch.FloatTensor(target==1))
+
+        if self.weight:
+            w = self.weight
+            if self.cuda:
+                w = w.cuda()
+            loss = torch.mul(loss, w[target])
+        # if self.size_average:
+        #     return loss.mean()
+        # else:
+        #     return loss.sum()
+        return loss.mean()
+
 class ParsingRelationLoss(nn.Module):
     def __init__(self):
         super(ParsingRelationLoss, self).__init__()
