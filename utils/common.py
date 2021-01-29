@@ -3,7 +3,9 @@ from utils.dist_utils import is_main_process, dist_print, DistSummaryWriter
 from utils.config import Config
 import torch
 
-trainId2color = {0:(255,0,0), 1:(0, 255, 0), 2:(0, 0, 255), 3:(255,255,0)}
+from data.cityscapes_labels import trainId2color
+
+# trainId2color = {0:(0,0,0), 1:(0, 255, 0), 2:(0, 0, 255), 3:(255,0,0), 4:(0,255,255)}
 
 def decode_seg_color_map(label):
     color_map = torch.ones((label.shape[0], label.shape[1], 3))* 255
@@ -50,6 +52,7 @@ def get_args():
     parser.add_argument('config', help = 'path to config file')
     parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument('--val', default = False, type = str2bool)
+    parser.add_argument('--distributed', default = False, type = str2bool)
     parser.add_argument('--dataset', default = None, type = str)
     parser.add_argument('--data_root', default = None, type = str)
     parser.add_argument('--epoch', default = None, type = int)
@@ -85,7 +88,7 @@ def merge_config():
     items = ['dataset','data_root','epoch','batch_size','optimizer','learning_rate',
     'weight_decay','momentum','scheduler','steps','gamma','warmup','warmup_iters',
     'use_aux','griding_num','backbone','sim_loss_w','shp_loss_w','note','log_path',
-    'finetune','resume', 'test_model','test_work_dir', 'num_lanes',  "save_prefix"]
+    'finetune','resume', 'test_model','test_work_dir', 'num_lanes',  "save_prefix", "distributed"]
     for item in items:
         if getattr(args, item) is not None:
             dist_print('merge ', item, ' config')

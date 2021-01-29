@@ -19,7 +19,8 @@ def get_train_loader(batch_size, data_root, griding_num, dataset, use_aux, distr
     img_transform = transforms.Compose([
         transforms.Resize((288, 800)),
         transforms.ToTensor(),
-        # transforms.ColorJitter(),
+        # Pyten-20210126-addnewtransform
+        # transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
     simu_transform = mytransforms.Compose2([
