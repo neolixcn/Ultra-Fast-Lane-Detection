@@ -26,7 +26,7 @@ def decode_cls_color_map(img, label, cfg):
     anchor_height = cfg.anchors[1] - cfg.anchors[0]
     if h != 288:
             scale_f = lambda x : int((x * 1.0/288) * h)
-            anchor_list = list(map(scale_f, anchors))
+            anchor_list = list(map(scale_f, cfg.anchors))
     else:
         anchor_list = cfg.anchors
 
@@ -57,6 +57,10 @@ def get_args():
     parser.add_argument('--data_root', default = None, type = str)
     parser.add_argument('--epoch', default = None, type = int)
     parser.add_argument('--batch_size', default = None, type = int)
+    # Pyten-20200129-ChangeInputSize
+    parser.add_argument('--width', default = 800, type = int)
+    parser.add_argument('--height', default = 288, type = int)
+
     parser.add_argument('--optimizer', default = None, type = str)
     parser.add_argument('--learning_rate', default = None, type = float)
     parser.add_argument('--weight_decay', default = None, type = float)
@@ -88,7 +92,7 @@ def merge_config():
     items = ['dataset','data_root','epoch','batch_size','optimizer','learning_rate',
     'weight_decay','momentum','scheduler','steps','gamma','warmup','warmup_iters',
     'use_aux','griding_num','backbone','sim_loss_w','shp_loss_w','note','log_path',
-    'finetune','resume', 'test_model','test_work_dir', 'num_lanes',  "save_prefix", "distributed"]
+    'finetune','resume', 'test_model','test_work_dir', 'num_lanes',  "save_prefix", "distributed", "width", "height"]
     for item in items:
         if getattr(args, item) is not None:
             dist_print('merge ', item, ' config')

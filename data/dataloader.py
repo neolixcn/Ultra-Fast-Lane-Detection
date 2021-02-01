@@ -9,15 +9,21 @@ from data.dataset import LaneClsDataset, LaneTestDataset
 
 def get_train_loader(batch_size, data_root, griding_num, dataset, use_aux, distributed, num_lanes, cfg):
     target_transform = transforms.Compose([
-        mytransforms.FreeScaleMask((288, 800)),
+        # Pyten-20200128-ChangeInputSize
+        # mytransforms.FreeScaleMask((288, 800)),
+        mytransforms.FreeScaleMask((cfg.height, cfg.width)),
         mytransforms.MaskToTensor(),
     ])
     segment_transform = transforms.Compose([
-        mytransforms.FreeScaleMask((36, 100)),
+        # Pyten-20200128-ChangeInputSize
+        # mytransforms.FreeScaleMask((36, 100)),
+        mytransforms.FreeScaleMask((cfg.height//8, cfg.width//8)),
         mytransforms.MaskToTensor(),
     ])
     img_transform = transforms.Compose([
-        transforms.Resize((288, 800)),
+        # Pyten-20200128-ChangeInputSize
+        # transforms.Resize((288, 800)),
+        transforms.Resize((cfg.height, cfg.width)),
         transforms.ToTensor(),
         # Pyten-20210126-addnewtransform
         # transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
@@ -75,18 +81,24 @@ def get_train_loader(batch_size, data_root, griding_num, dataset, use_aux, distr
     return train_loader, cls_num_per_lane
 
 # Pyten-20210106-Add_val_loader
-def get_val_loader(batch_size, data_root, griding_num, dataset, use_aux, distributed, num_lanes, ):
+def get_val_loader(batch_size, data_root, griding_num, dataset, use_aux, distributed, num_lanes, cfg):
     target_transform = transforms.Compose([
-        mytransforms.FreeScaleMask((288, 800)),
+        # Pyten-20200128-ChangeInputSize
+        # mytransforms.FreeScaleMask((288, 800)),
+        mytransforms.FreeScaleMask((cfg.height, cfg.width)),
         mytransforms.MaskToTensor(),
     ])
     img_transform = transforms.Compose([
-        transforms.Resize((288, 800)),
+        # Pyten-20200129-ChangeInputSize
+        # transforms.Resize((288, 800)),
+        transforms.Resize((cfg.height, cfg.width)),
         transforms.ToTensor(),
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
     segment_transform = transforms.Compose([
-        mytransforms.FreeScaleMask((36, 100)),
+        # Pyten-20200128-ChangeInputSize
+        # mytransforms.FreeScaleMask((36, 100)),
+        mytransforms.FreeScaleMask((cfg.height//8, cfg.width//8)),
         mytransforms.MaskToTensor(),
     ])
     

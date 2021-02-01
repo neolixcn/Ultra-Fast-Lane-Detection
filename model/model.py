@@ -1,6 +1,7 @@
 import torch
 from model.backbone import resnet
 import numpy as np
+import math
 
 class conv_bn_relu(torch.nn.Module):
     def __init__(self,in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1,bias=False):
@@ -26,6 +27,7 @@ class parsingNet(torch.nn.Module):
         # num_cls_per_lane is the number of row anchors
         self.use_aux = use_aux
         self.total_dim = np.prod(cls_dim)
+        self.mid_size = math.ceil(self.h / 32) * math.ceil(self.w / 32) * 8
 
         # input : nchw,
         # output: (w+1) * sample_rows * 4 
@@ -58,7 +60,9 @@ class parsingNet(torch.nn.Module):
             initialize_weights(self.aux_header2,self.aux_header3,self.aux_header4,self.aux_combine)
 
         self.cls = torch.nn.Sequential(
-            torch.nn.Linear(1800, 2048),
+            # Pyten-20200129-ChangeInputSize
+            # torch.nn.Linear(1800, 2048),
+            torch.nn.Linear(self.mid_size, 2048),
             torch.nn.ReLU(),
             torch.nn.Linear(2048, self.total_dim),
         )
@@ -77,16 +81,23 @@ class parsingNet(torch.nn.Module):
         if self.use_aux:
             x2 = self.aux_header2(x2)
             x3 = self.aux_header3(x3)
-            x3 = torch.nn.functional.interpolate(x3,scale_factor = 2,mode='bilinear')
+            # Pyten-20210129-FixBugWhenChangeInputSize
+            # x3 = torch.nn.functional.interpolate(x3,scale_factor = 2,mode='bilinear')
+            sizey, sizex = x2.shape[2], x2.shape[3]
+            x3 = torch.nn.functional.interpolate(x3, size=(sizey, sizex), mode='bilinear')
             x4 = self.aux_header4(fea)
-            x4 = torch.nn.functional.interpolate(x4,scale_factor = 4,mode='bilinear')
+            # Pyten-20210129-FixBugWhenChangeInputSize
+            # x4 = torch.nn.functional.interpolate(x4,scale_factor = 4,mode='bilinear')
+            x4 = torch.nn.functional.interpolate(x4, size=(sizey, sizex), mode='bilinear')
             aux_seg = torch.cat([x2,x3,x4],dim=1)
             aux_seg = self.aux_combine(aux_seg)
         else:
             aux_seg = None
 
-        fea = self.pool(fea).view(-1, 1800)
-
+        # Pyten-20200129-ChangeInputSize
+        # fea = self.pool(fea).view(-1, 1800)
+        fea = self.pool(fea).view(-1, self.mid_size)
+        
         group_cls = self.cls(fea).view(-1, *self.cls_dim)
 
         if self.use_aux:

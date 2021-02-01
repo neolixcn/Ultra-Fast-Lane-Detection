@@ -193,9 +193,9 @@ if __name__ == "__main__":
 
     train_loader, cls_num_per_lane = get_train_loader(cfg.batch_size, cfg.data_root, cfg.griding_num, cfg.dataset, cfg.use_aux, distributed, cfg.num_lanes, cfg)
     if cfg.val:
-        val_loader = get_val_loader(cfg.val_batch_size, cfg.val_data_root, cfg.griding_num, cfg.val_dataset, cfg.use_aux, distributed, cfg.num_lanes)
+        val_loader = get_val_loader(cfg.val_batch_size, cfg.val_data_root, cfg.griding_num, cfg.val_dataset, cfg.use_aux, distributed, cfg.num_lanes, cfg)
 
-    net = parsingNet(pretrained = True, backbone=cfg.backbone,cls_dim = (cfg.griding_num+1,cls_num_per_lane, cfg.num_lanes),use_aux=cfg.use_aux).cuda()
+    net = parsingNet(size=(cfg.height, cfg.width), pretrained = True, backbone=cfg.backbone,cls_dim = (cfg.griding_num+1,cls_num_per_lane, cfg.num_lanes),use_aux=cfg.use_aux).cuda()
 
     if distributed:
         net = torch.nn.parallel.DistributedDataParallel(net, device_ids = [args.local_rank], output_device=args.local_rank, find_unused_parameters=True)
