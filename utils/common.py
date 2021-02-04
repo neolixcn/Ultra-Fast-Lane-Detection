@@ -7,6 +7,13 @@ from data.cityscapes_labels import trainId2color
 
 # trainId2color = {0:(0,0,0), 1:(0, 255, 0), 2:(0, 0, 255), 3:(255,0,0), 4:(0,255,255)}
 
+# Pyten-20210201-TransformImg
+def img_detrans(img,std=(0.229, 0.224, 0.225),mean=(0.485, 0.456, 0.406)):
+    tensor = img.clone()
+    for t, m, s in zip(tensor, mean, std):
+        t.mul_(s).add_(m)
+    return tensor
+
 def decode_seg_color_map(label):
     color_map = torch.ones((label.shape[0], label.shape[1], 3))* 255
     for id in trainId2color:
