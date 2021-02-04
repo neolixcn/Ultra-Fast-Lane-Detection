@@ -165,3 +165,18 @@ class RandomUDoffsetLABEL(object):
             label[0:h-offset,:] = label[offset:,:]
             label[h-offset:,:] = 0
         return Image.fromarray(img),Image.fromarray(label)
+
+# Pyten-20210203-AddSegTransform
+class AlbumAug(object):
+    def __init__(self,transform):
+        self.transform = transform
+    def __call__(self,img, label):
+        w, h = img.size
+        img = np.array(img)
+        label = np.array(label)
+        assert self.transform is not None
+        transformed = self.transform(image=img, mask=label)
+        img = transformed["image"]
+        label = transformed["mask"]
+
+        return Image.fromarray(img),Image.fromarray(label)
