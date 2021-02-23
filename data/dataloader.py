@@ -41,7 +41,7 @@ def get_train_loader(batch_size, data_root, griding_num, dataset, use_aux, distr
                                                                     ])
 
     simu_transform = mytransforms.Compose2([
-        mytransforms.AlbumAug(albumtransforms),
+        # mytransforms.AlbumAug(albumtransforms),
         mytransforms.RandomRotate(6),
         mytransforms.RandomUDoffsetLABEL(100),
         mytransforms.RandomLROffsetLABEL(200)
@@ -64,11 +64,23 @@ def get_train_loader(batch_size, data_root, griding_num, dataset, use_aux, distr
                                            os.path.join(data_root, 'train.txt'), #'new_train.txt ' #'train.txt' 2000
                                            img_transform=img_transform, target_transform=target_transform,
                                            simu_transform = simu_transform,
-                                           griding_num=griding_num, 
+                                           griding_num=griding_num,
                                            row_anchor = cfg.anchors,
                                            segment_transform=segment_transform, use_aux=use_aux, num_lanes = num_lanes, mode = "train")
         cls_num_per_lane = 56 # 18
 
+    elif dataset == 'neolix':
+        if "anchors" not in cfg:
+            cfg.anchors = tusimple_row_anchor
+        train_dataset = LaneClsDataset(data_root,
+                                        os.path.join(data_root, 'train.txt'),
+                                        img_transform=img_transform, target_transform=target_transform,
+                                        simu_transform = simu_transform,
+                                        segment_transform=segment_transform,
+                                        row_anchor = cfg.anchors,
+                                        griding_num=griding_num, use_aux=use_aux, num_lanes = num_lanes)
+        cls_num_per_lane = 56
+    
     elif dataset == 'Tusimple':
         if "anchors" not in cfg:
             cfg.anchors = tusimple_row_anchor
@@ -134,7 +146,7 @@ def get_val_loader(batch_size, data_root, griding_num, dataset, use_aux, distrib
     
     elif dataset == 'neolix':
         val_dataset = LaneClsDataset(data_root,
-                                        os.path.join(data_root, 'val_gt.txt'),
+                                        os.path.join(data_root, 'val.txt'),
                                         img_transform=img_transform, target_transform=target_transform,
                                         simu_transform = None,
                                         segment_transform=segment_transform,
