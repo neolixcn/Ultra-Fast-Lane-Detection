@@ -6,7 +6,7 @@ import numpy as np
 import pdb
 import json, argparse
 
-SHOWFLAG = True
+SHOWFLAG = False
 
 def calc_k(line):
     '''
@@ -62,12 +62,12 @@ def get_neolix_list(root, label_file):
             os.makedirs(os.path.join(root, "labels", sub_folder))
         names.append("images/" + sub_folder + "/" + img_name)
         label = []
-        pdb.set_trace()
+        # pdb.set_trace()
         for lane in result["result"][0]["elements"]: 
             # skip sub_lines and road edges
-            if "sub_ID" in lane["attribute"] and lane["attribute"][ "sub_ID"] is not None:
+            if ("sub_ID" in lane["attribute"]) and (lane["attribute"][ "sub_ID"] != "null"):
                 continue
-            if lane["attribute"][ "single_line" ] == "road_edge":
+            if "single_line" in lane["attribute"] and lane["attribute"]["single_line"] == "road_edge":
                 continue
             # label.append(sorted(lane["points"], key=lambda x:x["y"]))
             label.append(lane["points"])
@@ -138,8 +138,8 @@ def generate_segmentation_and_train_list(root, line_txt, names):
         
         cv2.imwrite(os.path.join(root,label_path),label)
 
-        #with open(os.path.join(root,'train_gt.txt'),'a') as gt_fp:
-        #    gt_fp.write(names[i] + ' ' + label_path + ' '+' '.join(list(map(str,bin_label))) + '\n')
+        with open(os.path.join(root,'train_gt.txt'),'a') as gt_fp:
+            gt_fp.write(names[i] + ' ' + label_path + ' '+' '.join(list(map(str,bin_label))) + '\n')
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -148,8 +148,6 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args().parse_args()
-
-    # filter = ["solid white", "solid yellow", "broken white", "broken yellow", "double solid white", "double solid yellow", "solid & broken white", "solid & broken yellow"]
 
     # training set
     names,line_txt = get_neolix_list(args.root, "车道线标注总_共2505帧.txt")#"label.txt")
