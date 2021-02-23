@@ -62,7 +62,7 @@ def get_neolix_list(root, label_file):
 
 def generate_segmentation_and_train_list(root, line_txt, names):
     """
-    The lane annotations of the Tusimple dataset is not strictly in order, so we need to find out the correct lane order for segmentation.
+    The lane annotations of the Neolix dataset is not strictly in order, so we need to find out the correct lane order for segmentation.
     We use the same definition as CULane, in which the four lanes from left to right are represented as 1,2,3,4 in segentation label respectively.
     """
     
@@ -127,7 +127,7 @@ def generate_segmentation_and_train_list(root, line_txt, names):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--root', required=True, help='The root of the Tusimple dataset')
+    parser.add_argument('--root', required=True, help='The root of the Neolix dataset')
     return parser
 
 if __name__ == "__main__":

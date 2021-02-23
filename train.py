@@ -100,7 +100,7 @@ def train(net, data_loader, loss_dict, optimizer, scheduler,logger, epoch, metri
         logger.add_scalar('train/meta/lr', optimizer.param_groups[0]['lr'], global_step=global_step)
 
         if hasattr(progress_bar,'set_postfix'):
-            kwargs = {me_name: '%.3f' % me_op.get() for me_name, me_op in zip(metric_dict['name'], metric_dict['op'])}
+            kwargs = {me_name: '%.4f' % me_op.get() for me_name, me_op in zip(metric_dict['name'], metric_dict['op'])}
             progress_bar.set_postfix(loss = '%.3f' % float(loss), 
                                     avg_loss = '%.3f' % float(total_loss / (b_idx + 1)),
                                     #data_time = '%.3f' % float(t_data_1 - t_data_0), 
@@ -152,7 +152,7 @@ def val(net, data_loader, loss_dict, scheduler,logger, epoch, metric_dict, cfg):
                 logger.add_image("val_cls/label", cls_color_label, global_step=global_step, dataformats='HWC')
 
             if hasattr(progress_bar,'set_postfix'):
-                kwargs = {me_name: '%.3f' % me_op.get() for me_name, me_op in zip(metric_dict['name'], metric_dict['op'])}
+                kwargs = {me_name: '%.4f' % me_op.get() for me_name, me_op in zip(metric_dict['name'], metric_dict['op'])}
                 progress_bar.set_postfix(loss = '%.3f' % float(loss), 
                                         avg_loss = '%.3f' % float(total_loss / (b_idx + 1)),
                                         # data_time = '%.3f' % float(t_data_1 - t_data_0), 
