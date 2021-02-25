@@ -1,5 +1,6 @@
 import torch, os, datetime
 import numpy as np
+from torch.nn.utils import clip_grad_norm_
 
 from model.model import parsingNet
 from data.dataloader import get_train_loader, get_val_loader
@@ -8,7 +9,7 @@ from utils.dist_utils import dist_print, dist_tqdm, is_main_process, DistSummary
 from utils.factory import get_metric_dict, get_loss_dict, get_optimizer, get_scheduler
 from utils.metrics import MultiLabelAcc, AccTopk, Metric_mIoU, update_metrics, reset_metrics
 
-from utils.common import merge_config, save_model, cp_projects, decode_seg_color_map, decode_cls_color_map
+from utils.common import merge_config, save_model, cp_projects, decode_seg_color_map, decode_cls_color_map, img_detrans
 from utils.common import get_work_dir, get_logger
 
 import time
@@ -62,7 +63,6 @@ def train(net, data_loader, loss_dict, optimizer, scheduler,logger, epoch, metri
     total_loss = 0
     for b_idx, data_label in enumerate(progress_bar):
         t_data_1 = time.time()
-        reset_metrics(metric_dict)
         global_step = epoch * len(data_loader) + b_idx
 
         t_net_0 = time.time()
@@ -71,6 +71,8 @@ def train(net, data_loader, loss_dict, optimizer, scheduler,logger, epoch, metri
         loss = calc_loss(loss_dict, results, logger, global_step, "train")
         optimizer.zero_grad()
         loss.backward()
+        # Pyten-20210201-ClipGrad
+        clip_grad_norm_(net.parameters(), max_norm=10.0)
         optimizer.step()
         total_loss = total_loss + loss.detach()
         scheduler.step(global_step)
@@ -79,8 +81,10 @@ def train(net, data_loader, loss_dict, optimizer, scheduler,logger, epoch, metri
         results = resolve_val_data(results, cfg.use_aux)
         update_metrics(metric_dict, results)
         if global_step % 20 == 0:
-            # import pdb; pdb.set_trace()
-            logger.add_image("train_image", data_label[0][0], global_step=global_step)
+            # Pyten-20210201-TransformImg
+            img = img_detrans(data_label[0][0])
+            logger.add_image("train_image/org", img, global_step=global_step)
+            logger.add_image("train_image/std", data_label[0][0], global_step=global_step)
             if cfg.use_aux:
                 seg_color_out = decode_seg_color_map(results["seg_out"][0])
                 seg_color_label = decode_seg_color_map(data_label[2][0])
@@ -96,7 +100,7 @@ def train(net, data_loader, loss_dict, optimizer, scheduler,logger, epoch, metri
         logger.add_scalar('train/meta/lr', optimizer.param_groups[0]['lr'], global_step=global_step)
 
         if hasattr(progress_bar,'set_postfix'):
-            kwargs = {me_name: '%.3f' % me_op.get() for me_name, me_op in zip(metric_dict['name'], metric_dict['op'])}
+            kwargs = {me_name: '%.4f' % me_op.get() for me_name, me_op in zip(metric_dict['name'], metric_dict['op'])}
             progress_bar.set_postfix(loss = '%.3f' % float(loss), 
                                     avg_loss = '%.3f' % float(total_loss / (b_idx + 1)),
                                     #data_time = '%.3f' % float(t_data_1 - t_data_0), 
@@ -131,9 +135,12 @@ def val(net, data_loader, loss_dict, scheduler,logger, epoch, metric_dict, cfg):
 
             update_metrics(metric_dict, results)
             if global_step % 20 == 0:
-                logger.add_image("val_image", data_label[0][0], global_step=global_step)
+                # Pyten-20210201-TransformImg
+                img = img_detrans(data_label[0][0])
+                logger.add_image("val_image/org", img, global_step=global_step)
+                logger.add_image("val_image/std", data_label[0][0], global_step=global_step)
                 if cfg.use_aux:
-                    # pdb.set_trace()
+                    # import pdb; pdb.set_trace()
                     seg_color_out = decode_seg_color_map(results["seg_out"][0])
                     seg_color_label = decode_seg_color_map(data_label[2][0])
                     logger.add_image("val_seg/predict", seg_color_out, global_step=global_step, dataformats='HWC')
@@ -144,12 +151,8 @@ def val(net, data_loader, loss_dict, scheduler,logger, epoch, metric_dict, cfg):
                 logger.add_image("val_cls/predict", cls_color_out, global_step=global_step, dataformats='HWC')
                 logger.add_image("val_cls/label", cls_color_label, global_step=global_step, dataformats='HWC')
 
-                for me_name, me_op in zip(metric_dict['name'], metric_dict['op']):
-                    logger.add_scalar('val_metric/' + me_name, me_op.get(), global_step=global_step)
-            logger.add_scalar('val_meta/lr', optimizer.param_groups[0]['lr'], global_step=global_step)
-
             if hasattr(progress_bar,'set_postfix'):
-                kwargs = {me_name: '%.3f' % me_op.get() for me_name, me_op in zip(metric_dict['name'], metric_dict['op'])}
+                kwargs = {me_name: '%.4f' % me_op.get() for me_name, me_op in zip(metric_dict['name'], metric_dict['op'])}
                 progress_bar.set_postfix(loss = '%.3f' % float(loss), 
                                         avg_loss = '%.3f' % float(total_loss / (b_idx + 1)),
                                         # data_time = '%.3f' % float(t_data_1 - t_data_0), 
@@ -158,6 +161,8 @@ def val(net, data_loader, loss_dict, scheduler,logger, epoch, metric_dict, cfg):
             t_data_0 = time.time()
     
     dist_print("avg_loss_over_epoch", total_loss / len(data_loader))
+    for me_name, me_op in zip(metric_dict['name'], metric_dict['op']):
+        logger.add_scalar('val_metric/' + me_name, me_op.get(), global_step=epoch)
     # Pyten-20201019-SaveBestMetric
     update_best_metric = True
     for me_name, me_op in zip(metric_dict['name'], metric_dict['op']):
@@ -194,9 +199,9 @@ if __name__ == "__main__":
 
     train_loader, cls_num_per_lane = get_train_loader(cfg.batch_size, cfg.data_root, cfg.griding_num, cfg.dataset, cfg.use_aux, distributed, cfg.num_lanes, cfg)
     if cfg.val:
-        val_loader = get_val_loader(cfg.val_batch_size, cfg.val_data_root, cfg.griding_num, cfg.val_dataset, cfg.use_aux, distributed, cfg.num_lanes)
+        val_loader = get_val_loader(cfg.val_batch_size, cfg.val_data_root, cfg.griding_num, cfg.val_dataset, cfg.use_aux, distributed, cfg.num_lanes, cfg)
 
-    net = parsingNet(pretrained = True, backbone=cfg.backbone,cls_dim = (cfg.griding_num+1,cls_num_per_lane, cfg.num_lanes),use_aux=cfg.use_aux).cuda()
+    net = parsingNet(size=(cfg.height, cfg.width), pretrained = True, backbone=cfg.backbone,cls_dim = (cfg.griding_num+1,cls_num_per_lane, cfg.num_lanes),use_aux=cfg.use_aux).cuda()
 
     if distributed:
         net = torch.nn.parallel.DistributedDataParallel(net, device_ids = [args.local_rank], output_device=args.local_rank, find_unused_parameters=True)
@@ -245,7 +250,14 @@ if __name__ == "__main__":
         
         save_model(net, optimizer, epoch ,work_dir, distributed)
     if cfg.val:
-        dist_print("best metric is got at epoch {}".format(cfg.best_epoch))
-        for me_name, me_op in zip(metric_dict['name'], metric_dict['op']):
-            dist_print(me_name, me_op.get())
+        txt = "\nbest metric is got at epoch {}\n".format(cfg.best_epoch)
+        for me_name,me_val in metric_dict["best_metric"].items():
+            txt += me_name +":"+ str(me_val) + "\n"
+
+        dist_print(txt)
+        config_txt = os.path.join(work_dir, 'cfg.txt')
+        if is_main_process():
+            with open(config_txt, 'a') as fp:
+                fp.write(txt)
+
     logger.close()
