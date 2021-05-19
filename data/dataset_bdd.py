@@ -79,6 +79,9 @@ class BddLaneClsDataset(torch.utils.data.Dataset):
     
         if self.simu_transform is not None:
             img, label = self.simu_transform(img, label)
+        # Pyten-20210201-FixSegLabelBug
+        seg_label = label.copy()
+        
         lane_pts = self._get_index(label)
         # get the coordinates of lanes at row anchors
 
@@ -87,7 +90,8 @@ class BddLaneClsDataset(torch.utils.data.Dataset):
         # make the coordinates to classification label
         if self.use_aux:
             assert self.segment_transform is not None
-            seg_label = self.segment_transform(label)
+            # Pyten-20210201-FixSegLabelBug
+            seg_label = self.segment_transform(seg_label)
 
         if self.img_transform is not None:
             img = self.img_transform(img)

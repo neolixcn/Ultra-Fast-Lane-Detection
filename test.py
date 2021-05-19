@@ -23,6 +23,10 @@ if __name__ == "__main__":
         cls_num_per_lane = 18
     elif cfg.dataset == 'Tusimple':
         cls_num_per_lane = 56
+    elif cfg.dataset == 'Bdd100k':
+        cls_num_per_lane = 56
+    elif cfg.dataset == 'neolix':
+        cls_num_per_lane = 56
     else:
         raise NotImplementedError
 
@@ -45,4 +49,6 @@ if __name__ == "__main__":
     if not os.path.exists(cfg.test_work_dir):
         os.mkdir(cfg.test_work_dir)
 
-    eval_lane(net, cfg.dataset, cfg.data_root, cfg.test_work_dir, cfg.griding_num, False, distributed)
+    #eval_lane(net, cfg.dataset, cfg.data_root, cfg.test_work_dir, cfg.griding_num, False, distributed)
+    eval_lane(net, 'Neolix', '/nfs/neolix_data1/neolix_dataset/test_dataset/lane_detection/neolix_lane_fisheye/lane', cfg.test_work_dir, cfg.griding_num, False, distributed)
+    #eval_lane(net, 'Tusimple', '/nfs/neolix_data1/lanxin_temp/test_set', cfg.test_work_dir, cfg.griding_num, False, distributed)

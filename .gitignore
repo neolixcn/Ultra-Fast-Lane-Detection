@@ -7,8 +7,11 @@
 
 **/build
 
-evaluate 
+evaluate
 tmp
+evaluation/culane/
+ufld_fish_results/
+ufld_test_results/
 
 *.avi
 

@@ -1,9 +1,9 @@
 # DATA
 dataset= 'neolix'
-data_root = "/data/pantengteng/neolix_lane_fisheye/lane/"
+data_root = '/nfs/neolix_data1/neolix_dataset/develop_dataset/lane_detection/neolix_lane_fisheye/lane'#"/data/pantengteng/neolix_lane_fisheye/lane/"
 
 val_dataset='neolix'
-val_data_root='/data/pantengteng/neolix_lane_fisheye/lane/'
+val_data_root='/nfs/neolix_data1/neolix_dataset/develop_dataset/lane_detection/neolix_lane_fisheye/lane'#'/data/pantengteng/neolix_lane_fisheye/lane/'
 
 # TRAIN
 epoch = 50#100
@@ -27,7 +27,7 @@ val_batch_size = 4
 use_aux = True
 seg_class_num = 19
 griding_num = 200
-backbone = '101'#'18'#
+backbone = '18'#'18'#
 
 # LOSS
 cls_loss_w  = 1
@@ -38,15 +38,15 @@ shp_loss_w = 0 #0.1#0.0# 0.1 relation_dis
 # EXP
 note = ''
 
-log_path = "/data/pantengteng/tensorboard_logs"# "/home/pantengteng/Programs/tensorboard_logs"
+log_path = "/nfs/neolix_data1/lanxin_temp/tensorboard_logs"# "/home/pantengteng/Programs/tensorboard_logs"
 
 # FINETUNE or RESUME MODEL PATH
 finetune = None #"/data/pantengteng/tensorboard_logs/20210105_210507_lr_1e-01_b_8/ep093.pth" #None #"./tusimple_18.pth"#None #None #./culane_18.pth"
 resume = None #"/data/pantengteng/tensorboard_logs/20210105_210507_lr_1e-01_b_8/ep093.pth"#None
  
 # TEST
-test_model = "/data/pantengteng/tensorboard_logs/20210105_210507_lr_1e-01_b_8/ep099.pth"
+test_model = '/data/pantengteng/tensorboard_logs/lanxin/20210512_134803_lr_1e-02_b_32/ep035.pth'#"/data/pantengteng/tensorboard_logs/20210105_210507_lr_1e-01_b_8/ep099.pth"
 test_work_dir = None
-save_prefix = "new_2021"
+save_prefix = ""
 
 num_lanes = 4 #14

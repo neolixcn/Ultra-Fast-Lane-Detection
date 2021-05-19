@@ -16,15 +16,16 @@ def calc_k(line):
     # ployfit无法拟合x=a的直线，单独考虑
     # if line_x[0] == line_x[-1]:
     #     return math.pi / 2
-
     line_y = [point["y"] for point in line]
     length = np.sqrt((line_x[0]-line_x[-1])**2 + (line_y[0]-line_y[-1])**2)
     if length < 90:
         return -10                                          # if the lane is too short, it will be skipped
+    try:
+        p = np.polyfit(line_x, line_y,deg = 1)
+        rad = np.arctan(p[0])
+    except ValueError:
+        rad=0
 
-    p = np.polyfit(line_x, line_y,deg = 1)
-    rad = np.arctan(p[0])
-    
     return rad
 def draw(im,line,idx,show = SHOWFLAG):
     '''
@@ -53,25 +54,26 @@ def get_neolix_list(root, label_file):
     for line in label_content:
         if "url" in line:
             continue
-        content = line.split()
-        url, img_name, str_result = content
-        result = json.loads(str_result)
-        sub_folder = url.split("/")[-2]
-        # 创建labels下的subfolder
-        if not os.path.exists(os.path.join(root, "labels", sub_folder)):
-            os.makedirs(os.path.join(root, "labels", sub_folder))
-        names.append("images/" + sub_folder + "/" + img_name)
-        label = []
-        # pdb.set_trace()
-        for lane in result["result"][0]["elements"]: 
-            # skip sub_lines and road edges
-            if ("sub_ID" in lane["attribute"]) and (lane["attribute"][ "sub_ID"] != "null"):
-                continue
-            if "single_line" in lane["attribute"] and lane["attribute"]["single_line"] == "road_edge":
-                continue
-            # label.append(sorted(lane["points"], key=lambda x:x["y"]))
-            label.append(lane["points"])
-        labels.append(label)
+        if "sensor" in line:
+            content = line.split()
+            url, img_name, str_result = content
+            result = json.loads(str_result)
+            sub_folder = url.split("/")[-2]
+            # 创建labels下的subfolder
+            if not os.path.exists(os.path.join(root, "labels", sub_folder)):
+                os.makedirs(os.path.join(root, "labels", sub_folder))
+            names.append("images/" + sub_folder + "/" + img_name)
+            label = []
+            # pdb.set_trace()
+            for lane in result["result"][0]["elements"]: 
+                # skip sub_lines and road edges
+                if ("sub_ID" in lane["attribute"]) and (lane["attribute"][ "sub_ID"] != "null"):
+                    continue
+                if "single_line" in lane["attribute"] and lane["attribute"]["single_line"] == "road_edge":
+                    continue
+                # label.append(sorted(lane["points"], key=lambda x:x["y"]))
+                label.append(lane["points"])
+            labels.append(label)
 
     return names,labels
 
@@ -85,7 +87,7 @@ def generate_segmentation_and_train_list(root, line_txt, names):
         tbar.set_postfix(img=names[i][7:])
         lines =  line_txt[i]
         ks = np.array([calc_k(line) for line in lines])             # get the direction of each lane
-
+        
         k_neg = ks[ks<0].copy()
         k_pos = ks[ks>0].copy()
         k_neg = k_neg[k_neg != -10]                                      # -10 means the lane is too short and is discarded
@@ -148,10 +150,12 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args().parse_args()
-
+    num=0
     # training set
-    names,line_txt = get_neolix_list(args.root, "车道线标注总_共2505帧.txt")#"label.txt")
+    names,line_txt = get_neolix_list(args.root, '新石器车道线3.31送标数据-7401帧-20210510.txt')#"车道线标注总_共2505帧.txt")#"label.txt")
     # generate segmentation and training list for training
     generate_segmentation_and_train_list(args.root, line_txt, names)
+    
+    
 
 

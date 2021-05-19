@@ -1,6 +1,8 @@
 # DATA
 dataset='Tusimple'
-data_root = None
+data_root = '/data/pantengteng/TuSimple'#None
+val_dataset= None
+val_data_root = None
 
 # TRAIN
 epoch = 100
@@ -17,19 +19,25 @@ gamma  = 0.1
 warmup = 'linear'
 warmup_iters = 100
 
+# VAL
+val = False
+val_batch_size = 2#4
+
 # NETWORK
 backbone = '18'
 griding_num = 100
 use_aux = True
 
 # LOSS
-sim_loss_w = 1.0
+cls_loss_w  = 1
+seg_loss_w = 1# -1 #2
+sim_loss_w = 0.0
 shp_loss_w = 0.0
 
 # EXP
 note = ''
 
-log_path = None
+log_path = '/data/pantengteng/tensorboard_logs/lanxin'#None
 
 # FINETUNE or RESUME MODEL PATH
 finetune = None
