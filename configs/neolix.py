@@ -38,7 +38,7 @@ shp_loss_w = 0 #0.1#0.0# 0.1 relation_dis
 # EXP
 note = ''
 
-log_path = "/nfs/neolix_data1/lanxin_temp/tensorboard_logs"# "/home/pantengteng/Programs/tensorboard_logs"
+log_path = "/nfs/neolix_data1/lanxin_temp/tensorboard_logs/lane"# "/home/pantengteng/Programs/tensorboard_logs"
 
 # FINETUNE or RESUME MODEL PATH
 finetune = None #"/data/pantengteng/tensorboard_logs/20210105_210507_lr_1e-01_b_8/ep093.pth" #None #"./tusimple_18.pth"#None #None #./culane_18.pth"
