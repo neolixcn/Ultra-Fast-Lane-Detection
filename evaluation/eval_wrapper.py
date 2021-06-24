@@ -44,7 +44,7 @@ def generate_lines(out, shape, names, output_path, griding_num, localization_typ
                                 '%d %d ' % (int(out_j[k, i] * col_sample_w * 1640 / 800) - 1, int(590 - k * 20) - 1))
                     fp.write('\n')
 
-def run_test(net, data_root, exp_name, work_dir, griding_num, use_aux,distributed, batch_size=8):
+def run_test_culane(net, data_root, exp_name, work_dir, griding_num, use_aux,distributed, batch_size=8):
     # torch.backends.cudnn.benchmark = True
     output_path = os.path.join(work_dir, exp_name)
     if not os.path.exists(output_path) and is_main_process():
@@ -82,10 +82,10 @@ def generate_tusimple_lines(out,shape,griding_num,localization_type='rel'):
         lanes.append(lane)
     return lanes
 
-def run_test_tusimple(net,data_root,work_dir,exp_name,griding_num,use_aux, distributed,batch_size = 8):
+def run_test(net,dataset,data_root,work_dir,exp_name,griding_num,use_aux, distributed,batch_size = 8):
     output_path = os.path.join(work_dir,exp_name+'.%d.txt'% get_rank())
     fp = open(output_path,'w')
-    loader = get_test_loader(batch_size,data_root,'Tusimple', distributed)
+    loader = get_test_loader(batch_size,data_root,dataset,distributed)
     for i,data in enumerate(dist_tqdm(loader)):
         imgs,names = data
         imgs = imgs.cuda()
@@ -124,6 +124,23 @@ def combine_tusimple_test(work_dir,exp_name):
             names.add(name)
             all_res_no_dup.append(res)
 
+def combine_neolix_test(work_dir,exp_name):
+    size = get_world_size()
+    all_res = []
+    for i in range(size):
+        output_path = os.path.join(work_dir,exp_name+'.%d.txt'% i)
+        with open(output_path, 'r') as fp:
+            res = fp.readlines()
+        all_res.extend(res)
+    names = set()
+    all_res_no_dup = []
+    for i, res in enumerate(all_res):
+        pos = res.find('images')
+        name = res[pos:].split('\"')[0]
+        if name not in names:
+            names.add(name)
+            all_res_no_dup.append(res)
+
     output_path = os.path.join(work_dir,exp_name+'.txt')
     with open(output_path, 'w') as fp:
         fp.writelines(all_res_no_dup)
@@ -132,7 +149,7 @@ def combine_tusimple_test(work_dir,exp_name):
 def eval_lane(net, dataset, data_root, work_dir, griding_num, use_aux, distributed):
     net.eval()
     if dataset == 'CULane':
-        run_test(net,data_root, 'culane_eval_tmp', work_dir, griding_num, use_aux, distributed)
+        run_test_culane(net,data_root, 'culane_eval_tmp', work_dir, griding_num, use_aux, distributed)
         synchronize()   # wait for all results
         if is_main_process():
             res = call_culane_eval(data_root, 'culane_eval_tmp', work_dir)
@@ -152,10 +169,22 @@ def eval_lane(net, dataset, data_root, work_dir, griding_num, use_aux, distribut
 
     elif dataset == 'Tusimple':
         exp_name = 'tusimple_eval_tmp'
-        run_test_tusimple(net, data_root, work_dir, exp_name, griding_num, use_aux, distributed)
+        run_test(net, dataset, data_root, work_dir, exp_name, griding_num, use_aux, distributed)
         synchronize()  # wait for all results
         if is_main_process():
             combine_tusimple_test(work_dir,exp_name)
+            res = LaneEval.bench_one_submit(os.path.join(work_dir,exp_name + '.txt'),os.path.join(data_root,'test_label.json'))
+            res = json.loads(res)
+            for r in res:
+                dist_print(r['name'], r['value'])
+        synchronize()
+    
+    elif dataset == 'Neolix':
+        exp_name = 'neolix_eval_tmp'
+        run_test(net, dataset, data_root, work_dir, exp_name, griding_num, use_aux, distributed)
+        synchronize()  # wait for all results
+        if is_main_process():
+            combine_neolix_test(work_dir,exp_name)
             res = LaneEval.bench_one_submit(os.path.join(work_dir,exp_name + '.txt'),os.path.join(data_root,'test_label.json'))
             res = json.loads(res)
             for r in res:
