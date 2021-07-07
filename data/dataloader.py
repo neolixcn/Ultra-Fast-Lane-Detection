@@ -78,7 +78,7 @@ def get_train_loader(batch_size, data_root, griding_num, dataset, use_aux, distr
                                         simu_transform = simu_transform,
                                         segment_transform=segment_transform,
                                         row_anchor = cfg.anchors,
-                                        griding_num=griding_num, use_aux=use_aux, num_lanes = num_lanes)
+                                        griding_num=griding_num, use_aux=use_aux, num_lanes = num_lanes, extend=False)
         cls_num_per_lane = 56
     
     elif dataset == 'Tusimple':
@@ -151,7 +151,7 @@ def get_val_loader(batch_size, data_root, griding_num, dataset, use_aux, distrib
                                         simu_transform = None,
                                         segment_transform=segment_transform,
                                         row_anchor = cfg.anchors,
-                                        griding_num=griding_num, use_aux=use_aux, num_lanes = num_lanes)
+                                        griding_num=griding_num, use_aux=use_aux, num_lanes = num_lanes, extend=False)
     
     elif dataset == 'Tusimple':
         val_dataset = LaneClsDataset(data_root,
@@ -183,6 +183,9 @@ def get_test_loader(batch_size, data_root,dataset, distributed):
         test_dataset = LaneTestDataset(data_root,os.path.join(data_root, 'list/test.txt'),img_transform = img_transforms)
         cls_num_per_lane = 18
     elif dataset == 'Tusimple':
+        test_dataset = LaneTestDataset(data_root,os.path.join(data_root, 'test.txt'), img_transform = img_transforms)
+        cls_num_per_lane = 56
+    elif dataset == 'Neolix':
         test_dataset = LaneTestDataset(data_root,os.path.join(data_root, 'test.txt'), img_transform = img_transforms)
         cls_num_per_lane = 56
 
